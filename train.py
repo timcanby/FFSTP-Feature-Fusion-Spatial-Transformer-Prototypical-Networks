@@ -4,7 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import torch.optim as optim
-
+import warnings
+warnings.filterwarnings("ignore")
 from torch.utils.data import DataLoader
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -149,15 +150,15 @@ loss = float('inf')
 ini_SupportSet, ini_QuerySet = extract_data('sample_training_data', 2, 5, 5)
 SupportSet, QuerySet = ini_SupportSet, ini_QuerySet
 testlist=[]
-for epoch in range(1, 1000+ 1)
+for epoch in range(1, 1000+ 1):
     if epoch % 5 == 0:#step include before shuffle
         SupportSet, QuerySet =extract_data('sample_training_data', 2, 5, 5)
-            #test(epoch, model, TestSupportSet, TestQuerySet )
-    if epoch % 100 == 0:
+
+    if epoch % 1 == 0:
        
         PATH = str(epoch) + '.pth'
         with torch.no_grad():
-            TestSupportSet, TestQuerySet = extract_data('sample_test_data', 2, 2, 1)
+            TestSupportSet, TestQuerySet = extract_data('sample_test_data', 2, 5, 15)
             testlist.append([epoch, test(epoch, model, TestSupportSet, TestQuerySet)])
         torch.save(model.state_dict(), PATH)
         torch.cuda.empty_cache()

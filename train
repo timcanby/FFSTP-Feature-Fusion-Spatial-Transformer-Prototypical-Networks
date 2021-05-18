@@ -1,0 +1,119 @@
+
+import torch.nn as nn
+
+import numpy as np
+import torch.optim as optim
+
+from KKSTP_net import KKSTP
+
+from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from datetime import datetime
+from dataloader import test_dataset
+dt = datetime.now()
+
+from torch.utils.data import DataLoader
+device = "cpu"
+import torch
+from dataloader import hogpretreatment
+import os
+
+from shutil import copyfile
+
+def walkFile(file):
+    for root, dirs, files in os.walk(file):
+        for f in files:
+            print(os.path.join(root, f))
+
+            os.makedirs(os.path.join('sample_test_data', f.replace('.jpg','')))
+            copyfile(os.path.join(root, f), os.path.join(os.path.join('sample_test_data', f.replace('.jpg','')), f))
+
+
+
+
+def indexmask(label, data_index):
+    import random
+    index_ = [x[1] for x in data_index]
+    return np.array([x[0] for x in data_index][random.choice([i for i, x in enumerate(index_) if x is label])])
+
+
+def euclidean_metric(a, b):
+    # print(np.shape(a))
+    n = a.shape[0]
+    m = b.shape[0]
+    a = a.unsqueeze(1).expand(n, m, -1)
+    b = b.unsqueeze(0).expand(n, m, -1)
+    logits = ((a - b) ** 2).sum(dim=2)
+    return 1 / logits
+
+model=KKSTP().double()
+model = nn.DataParallel(model)
+model.load_state_dict(torch.load('3300.pth',map_location=torch.device('cpu')))
+
+def test(model):
+    estimators = [
+
+        ('logit', LogisticRegression(solver='lbfgs', max_iter=1000)),
+        ('knn', KNeighborsClassifier()), ]
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    SupportSet,labellist= test_dataset(3,15,0, 'sample_training_data')
+    Support_loader = DataLoader(SupportSet, batch_size=10000)
+    querySet,testlabel = test_dataset(2, 0, 1, 'sample_test_data')
+    Query_loader = DataLoader(querySet , batch_size=1)
+    global data_index
+    model.train()
+
+    for batch_idx, (data, target) in enumerate(Query_loader):
+        hoglist = hogpretreatment(np.array(data))
+        data, target = torch.from_numpy(np.array(data)).cpu(), torch.tensor(target).cpu()
+        hog_data = torch.from_numpy(np.array(hoglist)).clone().cpu()
+        output_supports = torch.zeros(0).double()
+        target_supports = torch.zeros(0)
+
+        optimizer.zero_grad()
+        output = model(torch.from_numpy(np.expand_dims(data, 1)).double().clone(),
+                       torch.from_numpy(np.expand_dims(hog_data, 1)).double().clone()).cpu()
+        if os.path.exists('X.npy')==False:
+
+            for batch_idx, (data_support, target_support) in enumerate(Support_loader):
+                hoglist_support = hogpretreatment(np.array(data_support))
+                data_support, target_support = torch.from_numpy(np.array(data_support)).cpu(), torch.tensor(
+                    target_support).cpu()
+                hog_data_support = torch.from_numpy(np.array(hoglist_support)).clone().cpu()
+                output_support = model(torch.from_numpy(np.expand_dims(data_support, 1)).double().clone(),
+                                       torch.from_numpy(np.expand_dims(hog_data_support, 1)).double().clone()).cpu()
+                output_supports = torch.cat((output_supports, output_support), 0)
+                target_supports = torch.cat((target_supports, target_support), 0)
+
+            for x in set(target_supports):
+                class_mean = torch.zeros(0).double()
+                for each_index in (target_supports == x).nonzero():
+                    class_mean = torch.cat((class_mean, output_supports[each_index]), 0)
+                total_mean = torch.mean(class_mean, 0)
+                for each_index in (target_supports == x).nonzero():
+                    output_supports[each_index] = total_mean
+            X = np.array(output_support.detach().numpy())
+            y = np.array(target_supports.detach().numpy())
+            np.save('X.npy', X)
+            np.save('y.npy', y)
+            np.save('label.npy', labellist)
+        else:
+            X=np.load('X.npy')
+            y=np.load('y.npy')
+            labellist=np.load('label.npy')
+
+
+
+
+
+
+        voting = VotingClassifier(estimators, voting='soft')
+        voting.fit(X, y)
+        print(voting.predict(output.detach().numpy()))
+        print(labellist[:,1][int(voting.predict(output.detach().numpy()))])
+
+
+        print(testlabel)
+
+test(model)

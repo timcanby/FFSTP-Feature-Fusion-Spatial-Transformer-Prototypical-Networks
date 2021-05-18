@@ -1,0 +1,2 @@
+,epoch,loss
+0,1,"tensor(0.6930, dtype=torch.float64, grad_fn=<NllLossBackward>)"

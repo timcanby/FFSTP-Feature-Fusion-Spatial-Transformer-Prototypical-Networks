@@ -34,7 +34,7 @@ class FFSTP(nn.Module):
 
         self.conv1 = nn.Conv2d(1, 3 ,3, padding=1)
 
-        self.LinearTransform2 = nn.Linear(1076,500)
+        self.LinearTransform2 = nn.Linear(1076,2)
 
 
         # Spatial transformer localization-network
