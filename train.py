@@ -8,11 +8,9 @@ import warnings
 warnings.filterwarnings("ignore")
 from torch.utils.data import DataLoader
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-import torch
-from dataloader import hogpretreatment
 
-from dataloader import query_surpportSplit
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 from FFSTP_net import FFSTP
 import torch
@@ -141,8 +139,7 @@ def test(epoch, model, Support_loader, Query_loader):
         ##onehot = torch.nn.functional.one_hot(torch.tensor([x[0] for x in target]).long(), num_classes=5)
 
         loss = F.cross_entropy(q, torch.tensor([x[0] for x in target]).long().to(device))
-        print('test:')
-        print(loss)
+
         return loss.numpy()
 
 
@@ -150,13 +147,13 @@ loss = float('inf')
 ini_SupportSet, ini_QuerySet = extract_data('sample_training_data', 2, 5, 5)
 SupportSet, QuerySet = ini_SupportSet, ini_QuerySet
 testlist=[]
-for epoch in range(1, 1000+ 1):
+for epoch in range(1, 600+ 1):
     if epoch % 5 == 0:#step include before shuffle
         SupportSet, QuerySet =extract_data('sample_training_data', 2, 5, 5)
 
-    if epoch % 1 == 0:
+    if epoch % 50 == 0:
        
-        PATH = str(epoch) + '.pth'
+        PATH = 'trained_model/'+str(epoch) + '.pth'
         with torch.no_grad():
             TestSupportSet, TestQuerySet = extract_data('sample_test_data', 2, 5, 15)
             testlist.append([epoch, test(epoch, model, TestSupportSet, TestQuerySet)])
@@ -172,4 +169,5 @@ for epoch in range(1, 1000+ 1):
         df.to_csv("Testdata1.csv")
 
     train(epoch, model, SupportSet, QuerySet)
+
 
