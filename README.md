@@ -11,6 +11,8 @@ Run train.py to test model training.
 
 
 ![](train.gif)
+Because the author is not feeling well recently：（
+
 Visualization examples will be updated within a week
 
 ![](cross.gif)
@@ -18,7 +20,7 @@ Visualization examples will be updated within a week
 -------
 
 
-Authors
+Author
 -------
 
 - @Kangying Li 
