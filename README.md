@@ -11,9 +11,10 @@ Run train.py to test model training.
 
 
 ![](train.gif)
-Because the author is not feeling well recently：（
+Update 10/28
 
-Visualization examples will be updated within a week
+source code of evaluation
+
 
 ![](cross.gif)
 
